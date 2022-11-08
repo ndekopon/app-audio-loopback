@@ -7,6 +7,7 @@
 
 namespace
 {
+	bool logging = true;
 	std::wstring logpath = L"";
 
 	std::wstring get_log_filename()
@@ -22,7 +23,7 @@ namespace
 		return oss.str();
 	}
 
-	std::wstring get_log_path()
+	std::wstring get_log_dir()
 	{
 		WCHAR drivebuff[_MAX_DRIVE];
 		std::vector<WCHAR> fullbuff(32767, L'\0');
@@ -38,7 +39,7 @@ namespace
 		std::wstring r;
 		r = drivebuff;
 		r += dirbuff.data();
-		r += get_log_filename();
+		r += L"logs\\";
 		return r;
 	}
 
@@ -70,15 +71,25 @@ namespace app
 {
 	void write_to_logfile(const std::string& _text)
 	{
-		HANDLE file;
-
-		// logpathの確認
-		if (logpath == L"")
+		if (logging)
 		{
-			logpath = get_log_path();
+			// logpathの確認
+			if (logpath == L"")
+			{
+				auto logdir = get_log_dir();
+				auto type = ::GetFileAttributesW(logdir.c_str());
+				if (type == INVALID_FILE_ATTRIBUTES || (type | FILE_ATTRIBUTE_DIRECTORY) == 0)
+				{
+					logging = false;
+				}
+				logpath = logdir + get_log_filename();
+			}
 		}
 
-		file = ::CreateFileW(logpath.c_str(), FILE_APPEND_DATA, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+		if (!logging) return;
+		if (logpath == L"") return;
+
+		auto file = ::CreateFileW(logpath.c_str(), FILE_APPEND_DATA, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 
 		if (file == INVALID_HANDLE_VALUE)
 		{
