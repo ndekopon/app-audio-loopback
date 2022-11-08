@@ -1,4 +1,4 @@
-# app-audio-lookback
+# app-audio-loopback
 
 特定アプリの音声を別の出力先に出力する。
 
@@ -28,7 +28,7 @@ OBSのアプリケーション音声キャプチャでノイズが入る為、�
 
 ![image](https://user-images.githubusercontent.com/92087784/200534024-0393cddf-9678-46af-b6ef-8f23b94484e5.png)
 
-### OBSで
+### OBS側の設定
 
 デスクトップ音声のデバイスを、`Render`で選択したデバイスにする。
 
