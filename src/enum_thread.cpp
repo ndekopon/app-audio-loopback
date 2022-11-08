@@ -149,7 +149,7 @@ namespace app {
 					const auto title = get_window_title(window);
 					const auto classname = get_window_class_name(window);
 					const auto exename = get_window_exe_name(window);
-					data.push_back({ title, classname, exename });
+					data.push_back({ title, classname, exename, window });
 				}
 
 				// 情報格納

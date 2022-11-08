@@ -456,6 +456,21 @@ namespace app
 		}
 	}
 
+	bool main_window::is_target_window(HWND _window)
+	{
+		auto name = get_window_exe_name(_window);
+		auto title = get_window_title(_window);
+		auto classname = get_window_classname(_window);
+		auto req_name = config_ini_.get_capture_exe();
+		auto req_title = config_ini_.get_capture_title();
+		auto req_classname = config_ini_.get_capture_classname();
+		if (req_name != L"" && !is_match(name, req_name)) return false;
+		if (req_title != L"" && !is_match(title, req_title)) return false;
+		if (req_classname != L"" && !is_match(classname, req_classname)) return false;
+		if (req_name == L"" && req_classname == L"" && req_title == L"") return false;
+		return true;
+	}
+
 	LRESULT main_window::window_proc(UINT _message, WPARAM _wparam, LPARAM _lparam)
 	{
 		switch (_message)
@@ -494,9 +509,6 @@ namespace app
 				col.cx = 120;
 				col.iSubItem = 2;
 				ListView_InsertColumn(listview_, 2, &col);
-
-				// スタイルの適用
-				// ::SetWindowTheme(listview_, L"Explorer", NULL);
 			}
 
 			// タスクトレイ追加
@@ -516,6 +528,8 @@ namespace app
 
 			// タイマー設定
 			::SetTimer(window_, 1, 1000, nullptr);
+
+			enum_thread_.start();
 
 			return 0;
 
@@ -549,12 +563,38 @@ namespace app
 		{
 			data_ = enum_thread_.get_window_info();
 			::SendMessageW(listview_, LVM_DELETEALLITEMS, 0, 0);
+
+			bool found = false;
 			UINT row = 0;
-			for (const auto& [title, classname, exename] : data_)
+			for (const auto& [title, classname, exename, window] : data_)
 			{
 				listview_insert(listview_, row, title, classname, exename);
+				if (!found)
+				{
+					auto id = get_process_id(window);
+					if (id > 0 && is_target_window(window))
+					{
+						found = true;
+						if (capture_pid_ != id)
+						{
+							capture_pid_ = id;
+							worker_thread_.reset(render_name_, capture_pid_, volume_);
+						}
+					}
+				}
 				++row;
 			}
+
+			// 該当プロセスが見当たらなかった場合
+			if (!found)
+			{
+				if (capture_pid_ > 0)
+				{
+					capture_pid_ = 0;
+					worker_thread_.reset(render_name_, capture_pid_, volume_);
+				}
+			}
+
 			// サイズ変更
 			::SendMessageW(listview_, LVM_SETCOLUMNWIDTH, 0, LVSCW_AUTOSIZE_USEHEADER);
 			::SendMessageW(listview_, LVM_SETCOLUMNWIDTH, 1, LVSCW_AUTOSIZE_USEHEADER);
@@ -604,7 +644,6 @@ namespace app
 				}
 				else if (id == MID_SHOW_WINDOW)
 				{
-					// 初回取得(enumwindows)開始
 					enum_thread_.start();
 					::ShowWindow(window_, SW_SHOWNORMAL);
 				}
@@ -613,36 +652,42 @@ namespace app
 					config_ini_.set_capture_exe(std::get<2>(data_.at(select_line_)));
 					capture_pid_ = 0;
 					worker_thread_.reset(render_name_, capture_pid_, volume_);
+					enum_thread_.start();
 				}
 				else if (id == MID_MATCH_CLASSNAME)
 				{
 					config_ini_.set_capture_classname(std::get<1>(data_.at(select_line_)));
 					capture_pid_ = 0;
 					worker_thread_.reset(render_name_, capture_pid_, volume_);
+					enum_thread_.start();
 				}
 				else if (id == MID_MATCH_TITLE)
 				{
 					config_ini_.set_capture_title(std::get<0>(data_.at(select_line_)));
 					capture_pid_ = 0;
 					worker_thread_.reset(render_name_, capture_pid_, volume_);
+					enum_thread_.start();
 				}
 				else if (id == MID_REMOVE_MATCH_EXE)
 				{
 					config_ini_.set_capture_exe(L"");
 					capture_pid_ = 0;
 					worker_thread_.reset(render_name_, capture_pid_, volume_);
+					enum_thread_.start();
 				}
 				else if (id == MID_REMOVE_MATCH_CLASSNAME)
 				{
 					config_ini_.set_capture_classname(L"");
 					capture_pid_ = 0;
 					worker_thread_.reset(render_name_, capture_pid_, volume_);
+					enum_thread_.start();
 				}
 				else if (id == MID_REMOVE_MATCH_TITLE)
 				{
 					config_ini_.set_capture_title(L"");
 					capture_pid_ = 0;
 					worker_thread_.reset(render_name_, capture_pid_, volume_);
+					enum_thread_.start();
 				}
 				else if (MID_RENDER_NONE <= id && id < MID_RENDER_0 + render_names_.size())
 				{
@@ -723,19 +768,8 @@ namespace app
 			if (active_window != NULL)
 			{
 				auto id = get_process_id(active_window);
-				if (id > 0)
+				if (id > 0 && is_target_window(active_window))
 				{
-					auto name = get_window_exe_name(active_window);
-					auto title = get_window_title(active_window);
-					auto classname = get_window_classname(active_window);
-					auto req_name = config_ini_.get_capture_exe();
-					auto req_title = config_ini_.get_capture_title();
-					auto req_classname = config_ini_.get_capture_classname();
-					if (req_name != L"" && !is_match(name, req_name)) break;
-					if (req_title != L"" && !is_match(title, req_title)) break;
-					if (req_classname != L"" && !is_match(classname, req_classname)) break;
-					if (req_name == L"" && req_classname == L"" && req_title == L"") break;
-					
 					if (capture_pid_ != id)
 					{
 						capture_pid_ = id;

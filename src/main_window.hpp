@@ -43,6 +43,8 @@ namespace app
 		void submenu_render_create(HMENU);
 		void submenu_volume_create(HMENU);
 
+		bool is_target_window(HWND);
+
 		LRESULT window_proc(UINT, WPARAM, LPARAM);
 		static LRESULT CALLBACK window_proc_common(HWND, UINT, WPARAM, LPARAM);
 

@@ -16,7 +16,7 @@ namespace app
 	std::wstring get_window_class_name(HWND);
 	std::wstring get_window_exe_name(HWND);
 
-	using window_info_t = std::tuple<std::wstring, std::wstring, std::wstring>;
+	using window_info_t = std::tuple<std::wstring, std::wstring, std::wstring, HWND>;
 
 	class enum_thread
 	{
