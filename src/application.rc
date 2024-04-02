@@ -20,7 +20,7 @@ BEGIN
     BEGIN
         BLOCK "040004b0"
         BEGIN
-            VALUE "FileDescription", "capture & render specific application audio."
+            VALUE "FileDescription", "application audio loopback"
             VALUE "FileVersion", "0.0.2.0"
             VALUE "InternalName", "app-audio-loopback"
             VALUE "OriginalFilename", "app-audio-loopback.exe"
