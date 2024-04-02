@@ -890,6 +890,7 @@ namespace app
 
 	const wchar_t* main_window::window_class_ = L"app-audio-loopback-mainwindow";
 	const wchar_t* main_window::window_title_ = L"app-audio-loopback";
+	const wchar_t* main_window::window_mutex_ = L"app-audio-loopback-mutex";
 
 	const LONG main_window::window_width_ = 480;
 	const LONG main_window::window_height_ = 640 - 130;
@@ -926,6 +927,11 @@ namespace app
 
 	bool main_window::init()
 	{
+		HANDLE mutex = ::CreateMutexW(NULL, TRUE, window_mutex_);
+		if (::GetLastError() == ERROR_ALREADY_EXISTS)
+		{
+			return false;
+		}
 
 		set_dpi_awareness();
 

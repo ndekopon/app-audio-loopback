@@ -129,6 +129,7 @@ namespace app
 
 		static const wchar_t* window_class_;
 		static const wchar_t* window_title_;
+		static const wchar_t* window_mutex_;
 		static const LONG window_width_;
 		static const LONG window_height_;
 
