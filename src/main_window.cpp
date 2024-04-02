@@ -1149,6 +1149,34 @@ namespace app
 			window_width_ - 7 - 8 - 86 * 2, window_height_ - 9 - 24, 86, 24, window_, reinterpret_cast<HMENU>(MID_BUTTON_OK), instance_, NULL);
 	}
 
+	void main_window::window_show()
+	{
+		if (::IsWindowVisible(window_))
+		{
+			::SetForegroundWindow(window_);
+		}
+		else
+		{
+			enum_thread_.start();
+
+			// 描画停止(ちらつき防止)
+			::ShowWindow(window_, SW_SHOWNORMAL);
+
+			// タブの選択状況を0に戻す
+			tab_control_select(0);
+
+			// プルダウン等の選択状況を戻す
+			for (auto& tab : tabs_)
+			{
+				tab->reset_position();
+			}
+
+			// 再描画
+			::SetPropW(window_, L"SysSetRedraw", 0);
+			::RedrawWindow(window_, nullptr, NULL, RDW_INVALIDATE | RDW_ALLCHILDREN);
+		}
+	}
+
 	LRESULT main_window::window_proc(UINT _message, WPARAM _wparam, LPARAM _lparam)
 	{
 		switch (_message)
@@ -1278,6 +1306,9 @@ namespace app
 		case CWM_TASKTRAY:
 			switch (_lparam)
 			{
+			case WM_LBUTTONDBLCLK:
+				window_show();
+				break;
 			case WM_RBUTTONUP:
 				menu_create();
 				break;
@@ -1301,21 +1332,7 @@ namespace app
 				}
 				else if (id == MID_SHOW_WINDOW)
 				{
-					enum_thread_.start();
-					::ShowWindow(window_, SW_SHOWNORMAL);
-					
-					// タブの選択状況を0に戻す
-					tab_control_select(0);
-
-					// プルダウン等の選択状況を戻す
-					for (auto& tab : tabs_)
-					{
-						tab->reset_position();
-					}
-
-					// 
-					::SetPropW(window_, L"SysSetRedraw", 0);
-					::RedrawWindow(window_, nullptr, NULL, RDW_INVALIDATE | RDW_ALLCHILDREN);
+					window_show();
 				}
 			}
 

@@ -147,6 +147,8 @@ namespace app
 		UINT tab_control_get_position();
 		void button_create();
 
+		void window_show();
+
 
 		LRESULT window_proc(UINT, WPARAM, LPARAM);
 		static LRESULT CALLBACK window_proc_common(HWND, UINT, WPARAM, LPARAM);
