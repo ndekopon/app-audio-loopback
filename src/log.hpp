@@ -6,6 +6,6 @@
 
 namespace app
 {
-	void wlog(const std::string&);
-	void wlog(const std::wstring&);
+	void wlog(uint8_t _id, const std::string&);
+	void wlog(uint8_t _id, const std::wstring&);
 }

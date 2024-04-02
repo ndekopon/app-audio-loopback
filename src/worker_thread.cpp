@@ -13,8 +13,9 @@ namespace app {
 	constexpr DWORD RC_WORKER_THREAD_RESET = 1;
 	constexpr DWORD RC_WORKER_THREAD_CLOSE = 2;
 
-	worker_thread::worker_thread()
-		: window_(NULL)
+	worker_thread::worker_thread(uint8_t _id)
+		: id_(_id)
+		, window_(NULL)
 		, thread_(NULL)
 		, mtx_()
 		, cfg_mtx_()
@@ -49,8 +50,8 @@ namespace app {
 	DWORD worker_thread::proc_render_and_capture()
 	{
 		DWORD rc = 0;
-		render ren;
-		capture cap;
+		render ren(id_);
+		capture cap(id_);
 		std::wstring render_name;
 		std::wstring capture_name;
 
@@ -59,7 +60,7 @@ namespace app {
 			set_render_names(ren.get_names());
 
 			// 初期化完了を通知
-			::PostMessageW(window_, CWM_INIT_COMPLETE, NULL, NULL);
+			::PostMessageW(window_, CWM_INIT_COMPLETE, id_, NULL);
 
 			auto pid = get_capture_pid();
 
@@ -70,7 +71,7 @@ namespace app {
 
 					// 優先度を設定
 					DWORD task_index = 0;
-					HANDLE task = AvSetMmThreadCharacteristicsW(L"Audio", &task_index);
+					HANDLE task = ::AvSetMmThreadCharacteristicsW(L"Audio", &task_index);
 					if (NULL != task)
 					{
 						sample_buffer buffer(10, 10);
@@ -84,28 +85,30 @@ namespace app {
 							event_volume_
 						};
 
+						::PostMessageW(window_, CWM_STATUS_UPDATE, id_, 1);
+
 						while (true)
 						{
 
-							auto id = WaitForMultipleObjects(ARRAYSIZE(events), events, FALSE, INFINITE);
+							auto id = ::WaitForMultipleObjects(ARRAYSIZE(events), events, FALSE, INFINITE);
 
 							if (id == WAIT_OBJECT_0)
 							{
 								rc = RC_WORKER_THREAD_CLOSE;
-								wlog("close received.");
+								wlog(id_, "close received.");
 								break;
 							}
 							else if (id == WAIT_OBJECT_0 + 1)
 							{
 								rc = RC_WORKER_THREAD_RESET;
-								wlog("reset received.");
+								wlog(id_, "reset received.");
 								break;
 							}
 							else if (id == WAIT_OBJECT_0 + 2)
 							{
 								if (!ren.proc_buffer(buffer))
 								{
-									wlog("render::proc_buffer() failed.");
+									wlog(id_, "render::proc_buffer() failed.");
 									break;
 								}
 							}
@@ -113,12 +116,13 @@ namespace app {
 							{
 								if (!cap.proc_buffer(buffer))
 								{
-									wlog("capture::proc_buffer() failed.");
+									wlog(id_, "capture::proc_buffer() failed.");
 									break;
 								}
 							}
 							else if (id == WAIT_OBJECT_0 + 4)
 							{
+								// statsの更新
 								bool changed = false;
 								auto sc = buffer.get_skip_count();
 								auto dc = buffer.get_duplicate_count();
@@ -132,35 +136,31 @@ namespace app {
 										stats_total_duplicate_ = dc;
 									}
 								}
-								::PostMessageW(window_, CWM_STATS_UPDATE, NULL, NULL);
-								if (changed)
-								{
-									UINT64 count_get = 0;
-									UINT64 count_set = 0;
-									buffer.get_count(count_get, count_set);
-									wlog(
-										" skip=" + std::to_string(sc) +
-										" duplicate=" + std::to_string(dc) +
-										" buffer=" + std::to_string(cap.get_buffer_size()) +
-										" buffer_set=" + std::to_string(count_set) +
-										" buffer_get=" + std::to_string(count_get) +
-										" capture=" + std::to_string(cap.get_total_frame()) +
-										" render=" + std::to_string(ren.get_total_frame())
-									);
-								}
+								::PostMessageW(window_, CWM_STATS_UPDATE, id_, NULL);
+								//if (changed)
+								//{
+								//	UINT64 count_get = 0;
+								//	UINT64 count_set = 0;
+								//	buffer.get_count(count_get, count_set);
+								//}
 							}
 							else if (id == WAIT_OBJECT_0 + 5) // volume変更
 							{
-								ren.set_volume(get_volume());
+								auto volume = get_volume();
+								wlog(id_, "change volume -> " + std::to_string(volume));
+								ren.set_volume(volume);
 							}
 						}
-						AvRevertMmThreadCharacteristics(task);
+
+						::AvRevertMmThreadCharacteristics(task);
 					}
 					ren.stop();
 				}
 				cap.stop();
 			}
 		}
+
+		::PostMessageW(window_, CWM_STATUS_UPDATE, id_, 0);
 		
 		// 意図しない終了だった場合、アクションを待つ
 		if (rc != RC_WORKER_THREAD_RESET &&
@@ -171,19 +171,19 @@ namespace app {
 				event_reset_
 			};
 
-			wlog("wait until reset or close.");
+			wlog(id_, "wait until reset or close.");
 
-			auto id = WaitForMultipleObjects(ARRAYSIZE(events), events, FALSE, INFINITE);
+			auto id = ::WaitForMultipleObjects(ARRAYSIZE(events), events, FALSE, INFINITE);
 
 			if (id == WAIT_OBJECT_0)
 			{
 				rc = RC_WORKER_THREAD_CLOSE;
-				wlog("close received.");
+				wlog(id_, "close received.");
 			}
 			else if (id == WAIT_OBJECT_0 + 1)
 			{
 				rc = RC_WORKER_THREAD_RESET;
-				wlog("reset received.");
+				wlog(id_, "reset received.");
 			}
 		}
 
@@ -249,13 +249,14 @@ namespace app {
 				render_name_ = _render_name;
 				capture_pid_ = _capture_pid;
 				volume_ = _volume;
+				::SetEvent(event_reset_);
 			}
-			::SetEvent(event_reset_);
 		}
 	}
 
 	void worker_thread::stats()
 	{
+		std::lock_guard<std::mutex> lock(stats_mtx_);
 		if (event_stats_)
 		{
 			::SetEvent(event_stats_);
@@ -297,9 +298,9 @@ namespace app {
 
 	void worker_thread::set_volume(UINT32 _v)
 	{
+		std::lock_guard<std::mutex> lock(cfg_mtx_);
 		if (_v > 100) _v = 100;
 		{
-			std::lock_guard<std::mutex> lock(cfg_mtx_);
 			volume_ = _v;
 		}
 		if (event_volume_)

@@ -27,7 +27,7 @@ namespace app
 	sample_buffer::sample_buffer(UINT32 _duplicate_threshold, UINT32 _threashold_interval)
 		: buffer_(static_cast<size_t>(COMMON_SAMPLES * COMMON_BYTES_PERFRAME), 0)
 		, last_set_(0)
-		, last_get_(COMMON_SAMPLES - (COMMON_SAMPLES / 1000) * 10) // 初回は10ms遅延入れておく
+		, last_get_(COMMON_SAMPLES - (COMMON_SAMPLES / 1000) * 50) // 初回は50ms遅延入れておく
 		, skip_count_(0)
 		, duplicate_count_(0)
 		, skip_threshold_(_duplicate_threshold + _threashold_interval)

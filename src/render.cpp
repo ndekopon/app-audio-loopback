@@ -8,8 +8,9 @@
 namespace app {
 
 
-	render::render()
-		: devices_()
+	render::render(uint8_t _id)
+		: id_(_id)
+		, devices_()
 		, names_()
 		, client_(nullptr)
 		, render_client_(nullptr)
@@ -33,22 +34,22 @@ namespace app {
 
 	bool render::init()
 	{
-		wlog("render::init");
+		wlog(id_, "render::init");
 		devices_ = get_mmdevices(eRender, format_);
 		names_ = get_mmdevices_name(devices_);
 		event_ = ::CreateEventW(NULL, FALSE, FALSE, NULL);
 		if (event_ == NULL)
 		{
-			wlog("  CreateEvent() failed.");
+			wlog(id_, "  CreateEvent() failed.");
 			return false;
 		}
 
 		if (devices_.size() == 0)
 		{
-			wlog("  render device not found.");
+			wlog(id_, "  render device not found.");
 			return false;
 		}
-		wlog("  success.");
+		wlog(id_, "  success.");
 		return true;
 	}
 
@@ -66,7 +67,7 @@ namespace app {
 		{
 			if (names_.at(i) == _name)
 			{
-				wlog(L"  Name: " + _name);
+				wlog(id_, L"  Name: " + _name);
 				index = i;
 				break;
 			}
@@ -79,7 +80,7 @@ namespace app {
 			hr = devices_.at(index)->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, (void**)&client_);
 			if (hr != S_OK)
 			{
-				wlog("  IMMDevice::Activate(IAudioClient) failed.");
+				wlog(id_, "  IMMDevice::Activate(IAudioClient) failed.");
 			}
 
 			hr = devices_.at(index)->Activate(__uuidof(IAudioSessionManager), CLSCTX_ALL, NULL, (void**)&manager);
@@ -88,20 +89,20 @@ namespace app {
 				hr = manager->GetSimpleAudioVolume(NULL, FALSE, &volume_);
 				if (hr != S_OK)
 				{
-					wlog("  IAudioSessionManager::GetSimpleAudioVolume() failed.");
+					wlog(id_, "  IAudioSessionManager::GetSimpleAudioVolume() failed.");
 				}
 				manager->Release();
 			}
 			else
 			{
-				wlog("  IMMDevice::Activate(IAudioSessionManager) failed.");
+				wlog(id_, "  IMMDevice::Activate(IAudioSessionManager) failed.");
 			}
 
 			if (client_ && volume_) rc = true;
 		}
 		else
 		{
-			wlog("  capture device is not matched or None.");
+			wlog(id_, "  capture device is not matched or None.");
 		}
 
 		// 不要になったdevicesの開放
@@ -117,12 +118,12 @@ namespace app {
 	bool render::start(const std::wstring& _name, UINT32 _v)
 	{
 		HRESULT hr;
-		wlog("render::start");
+		wlog(id_, "render::start");
 
 		// クライアントとボリューム取得
 		if (!get_client_and_volume(_name))
 		{
-			wlog("  render::get_client_and_volume() failed.");
+			wlog(id_, "  render::get_client_and_volume() failed.");
 			return false;
 		}
 
@@ -135,17 +136,17 @@ namespace app {
 		hr = client_->GetDevicePeriod(&period_default, &period_minimum);
 		if (hr != S_OK)
 		{
-			wlog("  IAudioClient::GetDevicePeriod() failed.");
+			wlog(id_, "  IAudioClient::GetDevicePeriod() failed.");
 			return false;
 		}
-		wlog("  DefaultDevicePeriod: " + std::to_string(period_default));
-		wlog("  MinimumDevicePeriod: " + std::to_string(period_minimum));
+		wlog(id_, "  DefaultDevicePeriod: " + std::to_string(period_default));
+		wlog(id_, "  MinimumDevicePeriod: " + std::to_string(period_minimum));
 
 		// 初期化
 		hr = client_->Initialize(AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_EVENTCALLBACK, 0, 0, &format_, 0);
 		if (hr != S_OK)
 		{
-			wlog("  IAudioClient::Initialize() failed.");
+			wlog(id_, "  IAudioClient::Initialize() failed.");
 			return false;
 		}
 
@@ -153,7 +154,7 @@ namespace app {
 		hr = client_->SetEventHandle(event_);
 		if (hr != S_OK)
 		{
-			wlog("  IAudioClient::SetEventHandle() failed.");
+			wlog(id_, "  IAudioClient::SetEventHandle() failed.");
 			return false;
 		}
 
@@ -161,16 +162,16 @@ namespace app {
 		hr = client_->GetBufferSize(&buffersize_);
 		if (hr != S_OK)
 		{
-			wlog("  IAudioClient::GetBufferSize() failed.");
+			wlog(id_, "  IAudioClient::GetBufferSize() failed.");
 			return false;
 		}
-		wlog("  BufferSize: " + std::to_string(buffersize_));
+		wlog(id_, "  BufferSize: " + std::to_string(buffersize_));
 
 		// IAudioCaptureClient取得
 		hr = client_->GetService(__uuidof(IAudioRenderClient), (void**)&render_client_);
 		if (hr != S_OK)
 		{
-			wlog("  IAudioClient::GetService() failed.");
+			wlog(id_, "  IAudioClient::GetService() failed.");
 			return false;
 		}
 
@@ -178,7 +179,7 @@ namespace app {
 		hr = client_->Start();
 		if (hr != S_OK)
 		{
-			wlog("  IAudioClient::Start() failed.");
+			wlog(id_, "  IAudioClient::Start() failed.");
 			false;
 		}
 
@@ -206,7 +207,7 @@ namespace app {
 			}
 		}
 
-		wlog("  started.");
+		wlog(id_, "  started.");
 		return true;
 	}
 
@@ -232,7 +233,7 @@ namespace app {
 		available = buffersize_ - padding;
 		if (available == 0)
 		{
-			wlog("render buffer is filled.");
+			wlog(id_, "render buffer is filled.");
 			return true;
 		}
 
@@ -241,7 +242,7 @@ namespace app {
 
 		if (available != last_size_)
 		{
-			wlog("rendersize=" + std::to_string(available));
+			wlog(id_, "rendersize=" + std::to_string(available));
 			last_size_ = available;
 		}
 		_buffer.get(data, available);

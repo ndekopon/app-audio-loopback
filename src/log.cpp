@@ -4,11 +4,10 @@
 #include <vector>
 #include <iomanip>
 #include <sstream>
+#include <mutex>
 
 namespace
 {
-	bool logging = true;
-	std::wstring logpath = L"";
 
 	std::wstring get_log_filename()
 	{
@@ -69,45 +68,73 @@ namespace
 
 namespace app
 {
-	void write_to_logfile(const std::string& _text)
-	{
-		if (logging)
+
+	class app_logger {
+	private:
+		bool enable_;
+		std::wstring path_;
+		HANDLE file_;
+		std::mutex mtx_;
+
+	public:
+		app_logger()
+			: enable_(true)
+			, path_(L"")
+			, file_(nullptr)
+			, mtx_()
 		{
 			// logpathの確認
-			if (logpath == L"")
+			auto logdir = get_log_dir();
+			auto type = ::GetFileAttributesW(logdir.c_str());
+			if (type == INVALID_FILE_ATTRIBUTES || (type | FILE_ATTRIBUTE_DIRECTORY) == 0)
 			{
-				auto logdir = get_log_dir();
-				auto type = ::GetFileAttributesW(logdir.c_str());
-				if (type == INVALID_FILE_ATTRIBUTES || (type | FILE_ATTRIBUTE_DIRECTORY) == 0)
-				{
-					logging = false;
-				}
-				logpath = logdir + get_log_filename();
+				enable_ = false;
+			}
+			path_ = logdir + get_log_filename();
+		}
+
+		~app_logger()
+		{
+			if (file_)
+			{
+				::CloseHandle(file_);
 			}
 		}
 
-		if (!logging) return;
-		if (logpath == L"") return;
-
-		auto file = ::CreateFileW(logpath.c_str(), FILE_APPEND_DATA, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-
-		if (file == INVALID_HANDLE_VALUE)
+		void write_to_logfile(const std::string& _text)
 		{
-			return;
-		}
-		DWORD written = 0;
-		::WriteFile(file, _text.c_str(), (DWORD)_text.size(), &written, NULL);
-		::CloseHandle(file);
-	}
+			std::lock_guard<std::mutex> lock(mtx_);
+			
+			if (!enable_) return;
+			if (path_ == L"") return;
 
-	void wlog(const std::string& _text)
+			if (file_ == nullptr)
+			{
+				file_ = ::CreateFileW(path_.c_str(), FILE_APPEND_DATA, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+			}
+
+			if (file_ == INVALID_HANDLE_VALUE)
+			{
+				enable_ = false;
+				return;
+			}
+			else
+			{
+				DWORD written = 0;
+				::WriteFile(file_, _text.c_str(), (DWORD)_text.size(), &written, NULL);
+			}
+		}
+	} logger;
+
+
+	void wlog(uint8_t _id, const std::string& _text)
 	{
 		auto date = get_datestring();
-		write_to_logfile(date + " " + _text + "\r\n");
+		logger.write_to_logfile(date + " " + std::to_string(static_cast<uint16_t>(_id)) + " " + _text + "\r\n");
 	}
 
-	void wlog(const std::wstring& _text)
+	void wlog(uint8_t _id, const std::wstring& _text)
 	{
-		wlog(utf16_to_utf8(_text));
+		wlog(_id, utf16_to_utf8(_text));
 	}
 }

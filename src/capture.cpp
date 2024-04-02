@@ -80,8 +80,9 @@ namespace app {
 	};
 
 
-	capture::capture()
-		: client_(nullptr)
+	capture::capture(uint8_t _id)
+		: id_(_id)
+		, client_(nullptr)
 		, capture_client_(nullptr)
 		, format_({ WAVE_FORMAT_IEEE_FLOAT, COMMON_CHANNELS, COMMON_SAMPLES, COMMON_SAMPLES * COMMON_BYTES_PERFRAME, COMMON_BYTES_PERFRAME, COMMON_BYTES_PERFRAME * 4, 0 })
 		, buffersize_(0)
@@ -100,14 +101,14 @@ namespace app {
 
 	bool capture::init()
 	{
-		wlog("capture::init");
+		wlog(id_, "capture::init");
 		event_ = ::CreateEventW(NULL, FALSE, FALSE, NULL);
 		if (event_ == NULL)
 		{
-			wlog("  CreateEvent() failed.");
+			wlog(id_, "  CreateEvent() failed.");
 			return false;
 		}
-		wlog("  success.");
+		wlog(id_, "  success.");
 		return true;
 	}
 
@@ -131,15 +132,15 @@ namespace app {
 		hr = ::ActivateAudioInterfaceAsync(VIRTUAL_AUDIO_DEVICE_PROCESS_LOOPBACK, __uuidof(IAudioClient), &param_wrapper, &handler, &operation);
 		if (hr == S_OK)
 		{
-			wlog("  wait ActivateCompleted()...");
+			wlog(id_, "  wait ActivateCompleted()...");
 			auto rc = ::WaitForSingleObject(handler.event_, INFINITE);
-			wlog("  receive ActivateCompleted().");
+			wlog(id_, "  receive ActivateCompleted().");
 			client = handler.client_;
 			operation->Release();
 		}
 		else
 		{
-			wlog("  ActivateAudioInterfaceAsync() failed.");
+			wlog(id_, "  ActivateAudioInterfaceAsync() failed.");
 		}
 
 		return client;
@@ -149,13 +150,13 @@ namespace app {
 	{
 		HRESULT hr;
 
-		wlog("capture::start");
+		wlog(id_, "capture::start");
 
 		// クライアント取得
 		client_ = get_client(_pid);
 		if (client_ == nullptr)
 		{
-			wlog("  capture::get_client() failed.");
+			wlog(id_, "  capture::get_client() failed.");
 			return false;
 		}
 
@@ -163,7 +164,7 @@ namespace app {
 		hr = client_->Initialize(AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_LOOPBACK | AUDCLNT_STREAMFLAGS_EVENTCALLBACK, 0, 0, &format_, 0);
 		if (hr != S_OK)
 		{
-			wlog("  IAudioClient::Initialize() failed.");
+			wlog(id_, "  IAudioClient::Initialize() failed.");
 			return false;
 		}
 
@@ -171,7 +172,7 @@ namespace app {
 		hr = client_->SetEventHandle(event_);
 		if (hr != S_OK)
 		{
-			wlog("  IAudioClient::SetEventHandle() failed.");
+			wlog(id_, "  IAudioClient::SetEventHandle() failed.");
 			return false;
 		}
 
@@ -179,16 +180,16 @@ namespace app {
 		hr = client_->GetBufferSize(&buffersize_);
 		if (hr != S_OK)
 		{
-			wlog("  IAudioClient::GetBufferSize() failed.");
+			wlog(id_, "  IAudioClient::GetBufferSize() failed.");
 			return false;
 		}
-		wlog("  BufferSize: " + std::to_string(buffersize_));
+		wlog(id_, "  BufferSize: " + std::to_string(buffersize_));
 
 		// IAudioCaptureClient取得
 		hr = client_->GetService(__uuidof(IAudioCaptureClient), (void**)&capture_client_);
 		if (hr != S_OK)
 		{
-			wlog("  IAudioClient::GetService() failed.");
+			wlog(id_, "  IAudioClient::GetService() failed.");
 			return false;
 		}
 
@@ -196,10 +197,10 @@ namespace app {
 		hr = client_->Start();
 		if (hr != S_OK)
 		{
-			wlog("  IAudioClient::Start() failed.");
+			wlog(id_, "  IAudioClient::Start() failed.");
 			false;
 		}
-		wlog("  started.");
+		wlog(id_, "  started.");
 		return true;
 	}
 
@@ -230,7 +231,7 @@ namespace app {
 
 		if (readed != last_size_)
 		{
-			wlog("capturesize=" + std::to_string(readed));
+			wlog(id_, "capturesize=" + std::to_string(readed));
 			last_size_ = readed;
 		}
 		_buffer.set(data, readed);

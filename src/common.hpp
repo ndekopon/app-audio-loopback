@@ -26,6 +26,7 @@ namespace app {
 	constexpr UINT CWM_STATS_UPDATE = WM_APP + 3;
 	constexpr UINT CWM_ACTIVE_WINDOW_CHANGE = WM_APP + 4;
 	constexpr UINT CWM_ENUMWINDOW_FINISHED = WM_APP + 5;
+	constexpr UINT CWM_STATUS_UPDATE = WM_APP + 6;
 
 	constexpr UINT32 COMMON_SAMPLES = 48000;
 	constexpr UINT32 COMMON_CHANNELS = 2;

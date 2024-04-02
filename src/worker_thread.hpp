@@ -13,6 +13,7 @@ namespace app
 	class worker_thread
 	{
 	private:
+		uint8_t id_;
 		HWND window_;
 		HANDLE thread_;
 		std::mutex mtx_;
@@ -34,7 +35,7 @@ namespace app
 		DWORD proc_render_and_capture();
 		void set_render_names(const std::vector<std::wstring>&);
 	public:
-		worker_thread();
+		worker_thread(uint8_t _id);
 		~worker_thread();
 
 		// コピー不可

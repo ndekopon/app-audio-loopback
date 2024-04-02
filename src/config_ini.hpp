@@ -11,6 +11,7 @@ namespace app
 	{
 	private:
 		std::wstring path_;
+		std::wstring section_;
 
 		bool set_value(const std::wstring& _key, const std::wstring& _value);
 		std::wstring get_value(const std::wstring& _key);
@@ -18,6 +19,7 @@ namespace app
 
 	public:
 		config_ini();
+		config_ini(uint8_t _id);
 		~config_ini();
 
 		bool set_render_device(const std::wstring& _device);
@@ -34,5 +36,7 @@ namespace app
 
 		bool set_volume(UINT32);
 		UINT32 get_volume();
+
+		uint8_t get_tabs();
 	};
 }

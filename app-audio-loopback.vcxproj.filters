@@ -48,6 +48,9 @@
     <ClInclude Include="src\enum_thread.hpp">
       <Filter>headers</Filter>
     </ClInclude>
+    <ClInclude Include="src\resource.hpp">
+      <Filter>headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -80,5 +83,15 @@
     <ClCompile Include="src\enum_thread.cpp">
       <Filter>sources</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="src\application.ico">
+      <Filter>resources</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="src\application.rc">
+      <Filter>resources</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

@@ -16,6 +16,7 @@ namespace app
 	class capture
 	{
 	private:
+		uint8_t id_;
 		IAudioClient* client_;
 		IAudioCaptureClient* capture_client_;
 		WAVEFORMATEX format_;
@@ -26,7 +27,7 @@ namespace app
 		IAudioClient* get_client(DWORD);
 
 	public:
-		capture();
+		capture(uint8_t _id);
 		~capture();
 
 		HANDLE event_;

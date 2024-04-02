@@ -16,6 +16,7 @@ namespace app
 	class render
 	{
 	private:
+		uint8_t id_;
 		std::vector<IMMDevice*> devices_;
 		std::vector<std::wstring> names_;
 		IAudioClient* client_;
@@ -29,7 +30,7 @@ namespace app
 		bool get_client_and_volume(const std::wstring&);
 
 	public:
-		render();
+		render(uint8_t _id);
 		~render();
 
 		HANDLE event_;
