@@ -8,13 +8,13 @@ namespace
 	constexpr UINT32 COMMON_LOWER = app::COMMON_SAMPLES * BUFFER_SECONDS / 4 * 1;
 	constexpr UINT32 COMMON_HIGHER = app::COMMON_SAMPLES * BUFFER_SECONDS / 4 * 3;
 
-	bool lesser(uint64_t _a, uint64_t _b)
+	inline bool lesser(uint64_t _a, uint64_t _b)
 	{
 		if (_b < COMMON_LOWER && COMMON_HIGHER < _a) return true;
 		if (_a < COMMON_LOWER && COMMON_HIGHER < _b) return false;
 		return _a < _b;
 	}
-	bool greater(uint64_t _a, uint64_t _b)
+	inline bool greater(uint64_t _a, uint64_t _b)
 	{
 		if (_a < COMMON_LOWER && COMMON_HIGHER < _b) return true;
 		if (_b < COMMON_LOWER && COMMON_HIGHER < _a) return false;
@@ -108,17 +108,17 @@ namespace app
 		last_get_ %= buffer_frames;
 	}
 
-	UINT64 sample_buffer::get_skip_count()
+	UINT64 sample_buffer::get_skip_count() const
 	{
 		return skip_count_;
 	}
 
-	UINT64 sample_buffer::get_duplicate_count()
+	UINT64 sample_buffer::get_duplicate_count() const
 	{
 		return duplicate_count_;
 	}
 
-	void sample_buffer::get_count(UINT64 &_get_count, UINT64 &_set_count)
+	void sample_buffer::get_count(UINT64 &_get_count, UINT64 &_set_count) const
 	{
 		_get_count = get_count_;
 		_set_count = set_count_;
