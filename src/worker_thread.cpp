@@ -249,18 +249,14 @@ namespace app {
 				render_name_ = _render_name;
 				capture_pid_ = _capture_pid;
 				volume_ = _volume;
-				::SetEvent(event_reset_);
 			}
+			::SetEvent(event_reset_);
 		}
 	}
 
 	void worker_thread::stats()
 	{
-		std::lock_guard<std::mutex> lock(stats_mtx_);
-		if (event_stats_)
-		{
-			::SetEvent(event_stats_);
-		}
+		::SetEvent(event_stats_);
 	}
 
 	std::array<UINT64, 2> worker_thread::get_stats()
@@ -298,15 +294,12 @@ namespace app {
 
 	void worker_thread::set_volume(UINT32 _v)
 	{
-		std::lock_guard<std::mutex> lock(cfg_mtx_);
 		if (_v > 100) _v = 100;
 		{
+			std::lock_guard<std::mutex> lock(cfg_mtx_);
 			volume_ = _v;
 		}
-		if (event_volume_)
-		{
-			::SetEvent(event_volume_);
-		}
+		::SetEvent(event_volume_);
 	}
 
 	UINT32 worker_thread::get_volume()
