@@ -127,6 +127,8 @@ namespace app
 	} logger;
 
 
+#ifdef _DEBUG
+
 	void wlog(uint8_t _id, const std::string& _text)
 	{
 		auto date = get_datestring();
@@ -137,4 +139,15 @@ namespace app
 	{
 		wlog(_id, utf16_to_utf8(_text));
 	}
+#else
+
+	void wlog(uint8_t _id, const std::string& _text)
+	{
+	}
+
+	void wlog(uint8_t _id, const std::wstring& _text)
+	{
+	}
+
+#endif
 }
