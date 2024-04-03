@@ -29,6 +29,9 @@ namespace app {
 		, event_volume_(NULL)
 		, stats_total_skip_(0)
 		, stats_total_duplicate_(0)
+		, startup_delay_(40)
+		, duplicate_threshold_(10)
+		, threshold_interval_(10)
 	{
 	}
 
@@ -74,7 +77,7 @@ namespace app {
 					HANDLE task = ::AvSetMmThreadCharacteristicsW(L"Audio", &task_index);
 					if (NULL != task)
 					{
-						sample_buffer buffer(10, 10);
+						sample_buffer buffer(startup_delay_, duplicate_threshold_, threshold_interval_);
 
 						HANDLE events[] = {
 							event_close_,
@@ -208,12 +211,15 @@ namespace app {
 		return rc;
 	}
 
-	bool worker_thread::run(HWND _window, const std::wstring &_render_name, DWORD _capture_pid, UINT32 _volume)
+	bool worker_thread::run(HWND _window, const std::wstring &_render_name, DWORD _capture_pid, UINT32 _volume, UINT32 _startup_delay, UINT32 _duplicate_threshold, UINT32 _threshold_interval)
 	{
 		window_ = _window;
 		render_name_ = _render_name;
 		capture_pid_ = _capture_pid;
 		volume_ = _volume;
+		startup_delay_ = _startup_delay;
+		duplicate_threshold_ = _duplicate_threshold;
+		threshold_interval_ = _threshold_interval;
 
 		// イベント生成
 		if (event_close_ == NULL) event_close_ = ::CreateEventW(NULL, FALSE, FALSE, NULL);

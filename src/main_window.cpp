@@ -218,7 +218,7 @@ namespace app
 	{
 	}
 
-	bool capture_tab::init(HWND _window)
+	bool capture_tab::init(HWND _window, uint32_t _startup_delay, uint32_t _duplicate_threshold, uint32_t _threshold_interval)
 	{
 		window_ = _window;
 
@@ -232,7 +232,7 @@ namespace app
 
 		create_control();
 
-		if (!worker_thread_.run(window_, render_name_, capture_pid_, volume_)) return false;
+		if (!worker_thread_.run(window_, render_name_, capture_pid_, volume_, _startup_delay, _duplicate_threshold, _threshold_interval)) return false;
 
 		return true;
 	}
@@ -1196,11 +1196,17 @@ namespace app
 			tab_control_create();
 
 			// タブの要素の初期化
-			for (auto& tab : tabs_)
 			{
-				if (!tab->init(window_))
+				auto startup_delay = ini_.get_startup_delay();
+				auto duplicate_threshold = ini_.get_duplicate_threshold();
+				auto threshold_interval = ini_.get_threshold_interval();
+
+				for (auto& tab : tabs_)
 				{
-					return -1;
+					if (!tab->init(window_, startup_delay, duplicate_threshold, threshold_interval))
+					{
+						return -1;
+					}
 				}
 			}
 

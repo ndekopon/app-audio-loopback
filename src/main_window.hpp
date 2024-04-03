@@ -61,7 +61,7 @@ namespace app
 		capture_tab& operator = (const capture_tab&) = delete;
 
 
-		bool init(HWND _window);
+		bool init(HWND _window, uint32_t _startup_delay, uint32_t _duplicate_threshold, uint32_t _threshold_interval);
 		void stop();
 		void reset();
 

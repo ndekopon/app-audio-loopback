@@ -21,7 +21,7 @@ namespace app
 		UINT64 get_count_;
 
 	public:
-		sample_buffer(UINT32, UINT32);
+		sample_buffer(UINT32, UINT32, UINT32);
 		~sample_buffer();
 
 		void set(const BYTE*, UINT32);

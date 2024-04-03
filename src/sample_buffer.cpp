@@ -41,10 +41,10 @@ namespace
 
 namespace app
 {
-	sample_buffer::sample_buffer(UINT32 _duplicate_threshold, UINT32 _threashold_interval)
+	sample_buffer::sample_buffer(UINT32 _startup_delay, UINT32 _duplicate_threshold, UINT32 _threashold_interval)
 		: buffer_(static_cast<size_t>(COMMON_SAMPLES * BUFFER_SECONDS * COMMON_BYTES_PERFRAME), 0)
 		, last_set_(0)
-		, last_get_(COMMON_SAMPLES * BUFFER_SECONDS - (COMMON_SAMPLES / 1000) * 100) // 初回は100ms遅延入れておく
+		, last_get_(COMMON_SAMPLES * BUFFER_SECONDS - (COMMON_SAMPLES / 1000) * _startup_delay) // 初回は100ms遅延入れておく
 		, skip_count_(0)
 		, duplicate_count_(0)
 		, skip_threshold_(_duplicate_threshold + _threashold_interval)

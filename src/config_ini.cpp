@@ -140,13 +140,13 @@ namespace app {
 		return set_value(L"CAPTURECLASSNAME", _classname);
 	}
 
-	bool config_ini::set_volume(UINT32 _v)
+	bool config_ini::set_volume(uint32_t _v)
 	{
 		if (_v > 100) _v = 100;
 		return set_value(L"VOLUME", std::to_wstring(_v));
 	}
 
-	UINT32 config_ini::get_volume()
+	uint32_t config_ini::get_volume()
 	{
 		auto s = get_value(L"VOLUME");
 
@@ -175,5 +175,35 @@ namespace app {
 		if (n > 16) n = 16;
 
 		return n;
+	}
+
+	uint32_t config_ini::get_msec(const std::wstring& _key, uint32_t _default)
+	{
+		auto s = get_value(_key.c_str());
+
+		if (s.length() >= 5) return _default;
+		if (s.length() == 0) return _default;
+		if (!is_numeric(s)) return _default;
+		if (s.at(0) == L'0') return _default;
+
+		auto n = get_digit(s);
+		if (n > 1000) n = 1000;
+		if (n < 10) n = 10;
+		return n;
+	}
+
+	uint32_t config_ini::get_startup_delay()
+	{
+		return get_msec(L"STARTUP_DELAY", 40);
+	}
+
+	uint32_t config_ini::get_duplicate_threshold()
+	{
+		return get_msec(L"DUPLICATE_THRESHOLD", 10);
+	}
+
+	uint32_t config_ini::get_threshold_interval()
+	{
+		return get_msec(L"THRESHOLD_INTERVAL", 10);
 	}
 }

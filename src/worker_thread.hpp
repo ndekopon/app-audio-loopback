@@ -29,6 +29,9 @@ namespace app
 		HANDLE event_volume_;
 		UINT64 stats_total_skip_;
 		UINT64 stats_total_duplicate_;
+		UINT32 startup_delay_;
+		UINT32 duplicate_threshold_;
+		UINT32 threshold_interval_;
 
 		static DWORD WINAPI proc_common(LPVOID);
 		DWORD proc();
@@ -45,7 +48,7 @@ namespace app
 		worker_thread(worker_thread&&) = delete;
 		worker_thread& operator = (worker_thread&&) = delete;
 
-		bool run(HWND, const std::wstring &, DWORD, UINT32);
+		bool run(HWND, const std::wstring &, DWORD, UINT32, UINT32, UINT32, UINT32);
 		void stop();
 
 		void reset(const std::wstring &, DWORD, UINT32);

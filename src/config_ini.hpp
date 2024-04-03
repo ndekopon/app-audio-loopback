@@ -16,6 +16,7 @@ namespace app
 		bool set_value(const std::wstring& _key, const std::wstring& _value);
 		std::wstring get_value(const std::wstring& _key);
 		UINT get_intvalue(const std::wstring& _key);
+		uint32_t get_msec(const std::wstring& _key, uint32_t _default);
 
 	public:
 		config_ini();
@@ -34,9 +35,13 @@ namespace app
 		bool set_capture_title(const std::wstring &);
 		bool set_capture_classname(const std::wstring &);
 
-		bool set_volume(UINT32);
-		UINT32 get_volume();
+		bool set_volume(uint32_t);
+		uint32_t get_volume();
 
 		uint8_t get_tabs();
+
+		uint32_t get_startup_delay();
+		uint32_t get_duplicate_threshold();
+		uint32_t get_threshold_interval();
 	};
 }
