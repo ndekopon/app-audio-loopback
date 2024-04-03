@@ -5,8 +5,8 @@
 namespace
 {
 	constexpr UINT32 BUFFER_SECONDS = 10;
-	constexpr UINT32 COMMON_LOWER = app::COMMON_SAMPLES * BUFFER_SECONDS / 4 * 1;
-	constexpr UINT32 COMMON_HIGHER = app::COMMON_SAMPLES * BUFFER_SECONDS / 4 * 3;
+	constexpr UINT32 COMMON_LOWER = app::COMMON_SAMPLES * BUFFER_SECONDS * 1 / 4;
+	constexpr UINT32 COMMON_HIGHER = app::COMMON_SAMPLES * BUFFER_SECONDS * 3 / 4;
 
 	inline bool lesser(uint64_t _a, uint64_t _b)
 	{
@@ -19,6 +19,22 @@ namespace
 		if (_a < COMMON_LOWER && COMMON_HIGHER < _b) return true;
 		if (_b < COMMON_LOWER && COMMON_HIGHER < _a) return false;
 		return _a > _b;
+	}
+
+	inline void skip(UINT32& _m, const unsigned int _buffer_frames, UINT32 _frames, UINT64& _count, UINT64& _get_count)
+	{
+		_m += 1;
+		_m %= _buffer_frames;
+		_count++;
+		_get_count += _frames + 1;
+	}
+
+	inline void duplicate(UINT32& _m, const unsigned int _buffer_frames, UINT32 _frames, UINT64& _count, UINT64& _get_count)
+	{
+		_m += _buffer_frames - 1;
+		_m %= _buffer_frames;
+		_count++;
+		_get_count += (_frames - 1);
 	}
 }
 
@@ -70,26 +86,45 @@ namespace app
 		auto m = last_get_;
 		auto w = last_set_;
 
-		// しきい値によるスキップ処理
-		auto wl = (w + buffer_frames - (COMMON_SAMPLES / 1000) * skip_threshold_) % buffer_frames;
-		auto wg = (w + buffer_frames - (COMMON_SAMPLES / 1000) * duplicate_threshold_) % buffer_frames;
-		if (lesser((m + _frames) % buffer_frames, wl))
+		// しきい値によるスキップ＆重複処理
+		auto w_s = (w + buffer_frames - (COMMON_SAMPLES / 1000) * skip_threshold_) % buffer_frames;
+		auto w_d = (w + buffer_frames - (COMMON_SAMPLES / 1000) * duplicate_threshold_) % buffer_frames;
+		
+		auto next_m = (m + _frames) % buffer_frames;
+		if (w_s < w_d)
 		{
-			m += 1;
-			m %= buffer_frames;
-			skip_count_++;
-			get_count_ += _frames + 1;
+			if (lesser(next_m, w_s))
+			{
+				skip(m, buffer_frames, _frames, skip_count_, get_count_);
+			}
+			else if (greater(next_m, w_d))
+			{
+				duplicate(m, buffer_frames, _frames, duplicate_count_, get_count_);
+			}
+			else
+			{
+				get_count_ += _frames;
+			}
 		}
-		else if (greater((m + _frames) % buffer_frames, wg))
+		else if (w_d < w_s)
 		{
-			m += buffer_frames - 1;
-			m %= buffer_frames;
-			duplicate_count_++;
-			get_count_ += (_frames - 1);
-		}
-		else
-		{
-			get_count_ += _frames;
+			if (greater(next_m, w_d) && lesser(next_m, w_s))
+			{
+				auto a = w_s - next_m;
+				auto b = next_m - w_d;
+				if (a > b)
+				{
+					duplicate(m, buffer_frames, _frames, duplicate_count_, get_count_);
+				}
+				else
+				{
+					skip(m, buffer_frames, _frames, skip_count_, get_count_);
+				}
+			}
+			else
+			{
+				get_count_ += _frames;
+			}
 		}
 
 		if (m + _frames > buffer_frames)
