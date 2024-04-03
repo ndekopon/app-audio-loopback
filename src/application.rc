@@ -8,8 +8,8 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_DEFAULT
 IDI_APPAUDIOLOOPBACKICON    ICON    "application.ico"
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,0,2,0
- PRODUCTVERSION 0,0,2,0
+ FILEVERSION 0,0,3,0
+ PRODUCTVERSION 0,0,3,0
  FILEFLAGSMASK 0x3fL
  FILEFLAGS 0x0L
  FILEOS 0x40004L
@@ -21,11 +21,11 @@ BEGIN
         BLOCK "040004b0"
         BEGIN
             VALUE "FileDescription", "application audio loopback"
-            VALUE "FileVersion", "0.0.2.0"
+            VALUE "FileVersion", "0.0.3.0"
             VALUE "InternalName", "app-audio-loopback"
             VALUE "OriginalFilename", "app-audio-loopback.exe"
             VALUE "ProductName", "app-audio-loopback"
-            VALUE "ProductVersion", "0.0.2.0"
+            VALUE "ProductVersion", "0.0.3.0"
 			VALUE "LegalCopyright", "https://github.com/ndekopon/app-audio-loopback"
         END
     END
