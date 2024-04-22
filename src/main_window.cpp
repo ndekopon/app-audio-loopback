@@ -1170,9 +1170,6 @@ namespace app
 		// 描画停止(ちらつき防止)
 		::ShowWindow(window_, SW_SHOWNORMAL);
 
-		// タブの選択状況を0に戻す
-		tab_control_select(0);
-
 		// プルダウン等の選択状況を戻す
 		for (auto& tab : tabs_)
 		{
@@ -1374,6 +1371,10 @@ namespace app
 					{
 						tab->save();
 					}
+
+					// タブの選択状況を0に戻す
+					tab_control_select(0);
+
 					::ShowWindow(window_, SW_HIDE);
 				}
 			}
@@ -1387,6 +1388,10 @@ namespace app
 					{
 						tab->cancel();
 					}
+
+					// タブの選択状況を0に戻す
+					tab_control_select(0);
+
 					::ShowWindow(window_, SW_HIDE);
 				}
 			}
