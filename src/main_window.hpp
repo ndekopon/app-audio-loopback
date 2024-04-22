@@ -119,6 +119,7 @@ namespace app
 		HWND tab_control_;
 		HWND button_cancel_;
 		HWND button_ok_;
+		HWND button_apply_;
 		config_ini ini_;
 		HWINEVENTHOOK hook_winevent_;
 		NOTIFYICONDATAW nid_;

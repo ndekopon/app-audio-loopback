@@ -173,6 +173,7 @@ namespace app
 	constexpr UINT MID_SHOW_WINDOW = 2;
 	constexpr UINT MID_TAB = 3;
 	constexpr UINT MID_BUTTON_CANCEL = 4;
+	constexpr UINT MID_BUTTON_APPLY = 5;
 	constexpr UINT MID_BUTTON_OK = 6;
 
 	/* ---------------------------------------------------------------------
@@ -443,8 +444,8 @@ namespace app
 			int height = 0;
 			int dropdown_height = 23;
 			int trackbar_height = 23;
-			DWORD dropdown_style = CBS_DROPDOWNLIST | CBS_HASSTRINGS | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE;
-			DWORD trackbar_style = TBS_NOTICKS | TBS_TOOLTIPS | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE;
+			DWORD dropdown_style = CBS_DROPDOWNLIST | CBS_HASSTRINGS | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE | WS_TABSTOP;
+			DWORD trackbar_style = TBS_NOTICKS | TBS_TOOLTIPS | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE | WS_TABSTOP;
 
 			// render
 			height = label_height;
@@ -901,6 +902,7 @@ namespace app
 		, tab_control_(nullptr)
 		, button_cancel_(nullptr)
 		, button_ok_(nullptr)
+		, button_apply_(nullptr)
 		, ini_()
 		, hook_winevent_(NULL)
 		, nid_({ 0 })
@@ -950,8 +952,11 @@ namespace app
 
 		while (::GetMessageW(&message, nullptr, 0, 0))
 		{
-			::TranslateMessage(&message);
-			::DispatchMessageW(&message);
+			if (!::IsDialogMessageW(window_, &message))
+			{
+				::TranslateMessage(&message);
+				::DispatchMessageW(&message);
+			}
 		}
 		return (int)message.wParam;
 	}
@@ -1109,7 +1114,7 @@ namespace app
 		mi.cbSize = sizeof(MENUITEMINFO);
 
 		// 設定画面表示
-		WCHAR menu_selectapp_string[] = L"config";
+		WCHAR menu_selectapp_string[] = L"setting";
 		mi.fMask = MIIM_ID | MIIM_STRING;
 		mi.wID = MID_SHOW_WINDOW;
 		mi.dwTypeData = menu_selectapp_string;
@@ -1148,39 +1153,38 @@ namespace app
 
 	void main_window::button_create()
 	{
+		button_apply_ = ::CreateWindowExW(0, WC_BUTTONW, L"&Apply", WS_CHILD | WS_CLIPSIBLINGS | WS_VISIBLE | WS_TABSTOP,
+			window_width_ - 7 - 86, window_height_ - 9 - 24, 86, 24, window_, reinterpret_cast<HMENU>(MID_BUTTON_APPLY), instance_, NULL);
+
 		button_cancel_ = ::CreateWindowExW(0, WC_BUTTONW, L"&Cancel", WS_CHILD | WS_CLIPSIBLINGS | WS_VISIBLE | WS_TABSTOP,
-			window_width_ - 7 - 86, window_height_ - 9 - 24, 86, 24, window_, reinterpret_cast<HMENU>(MID_BUTTON_CANCEL), instance_, NULL);
+			window_width_ - 7 - 8 * 1 - 86 * 2, window_height_ - 9 - 24, 86, 24, window_, reinterpret_cast<HMENU>(MID_BUTTON_CANCEL), instance_, NULL);
 
 		button_ok_ = ::CreateWindowExW(0, WC_BUTTONW, L"&OK", WS_CHILD | WS_CLIPSIBLINGS | WS_VISIBLE | BS_DEFPUSHBUTTON | WS_TABSTOP,
-			window_width_ - 7 - 8 - 86 * 2, window_height_ - 9 - 24, 86, 24, window_, reinterpret_cast<HMENU>(MID_BUTTON_OK), instance_, NULL);
+			window_width_ - 7 - 8 * 2 - 86 * 3, window_height_ - 9 - 24, 86, 24, window_, reinterpret_cast<HMENU>(MID_BUTTON_OK), instance_, NULL);
 	}
 
 	void main_window::window_show()
 	{
-		if (::IsWindowVisible(window_))
+		enum_thread_.start();
+
+		// 描画停止(ちらつき防止)
+		::ShowWindow(window_, SW_SHOWNORMAL);
+
+		// タブの選択状況を0に戻す
+		tab_control_select(0);
+
+		// プルダウン等の選択状況を戻す
+		for (auto& tab : tabs_)
 		{
-			::SetForegroundWindow(window_);
+			tab->reset_position();
 		}
-		else
-		{
-			enum_thread_.start();
 
-			// 描画停止(ちらつき防止)
-			::ShowWindow(window_, SW_SHOWNORMAL);
+		// 再描画
+		::SetPropW(window_, L"SysSetRedraw", 0);
+		::RedrawWindow(window_, nullptr, NULL, RDW_INVALIDATE | RDW_ALLCHILDREN);
 
-			// タブの選択状況を0に戻す
-			tab_control_select(0);
-
-			// プルダウン等の選択状況を戻す
-			for (auto& tab : tabs_)
-			{
-				tab->reset_position();
-			}
-
-			// 再描画
-			::SetPropW(window_, L"SysSetRedraw", 0);
-			::RedrawWindow(window_, nullptr, NULL, RDW_INVALIDATE | RDW_ALLCHILDREN);
-		}
+		// フォーカスをOKボタンに戻す
+		::SetFocus(button_ok_);
 	}
 
 	LRESULT main_window::window_proc(UINT _message, WPARAM _wparam, LPARAM _lparam)
@@ -1344,6 +1348,19 @@ namespace app
 				}
 				else if (id == MID_SHOW_WINDOW)
 				{
+					window_show();
+				}
+			}
+
+			// APPLYボタン
+			if (HIWORD(_wparam) == BN_CLICKED && (HWND)_lparam == button_apply_)
+			{
+				if (LOWORD(_wparam) == MID_BUTTON_APPLY)
+				{
+					for (auto& tab : tabs_)
+					{
+						tab->save();
+					}
 					window_show();
 				}
 			}
