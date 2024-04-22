@@ -1293,6 +1293,15 @@ namespace app
 		}
 
 		case WM_CLOSE:
+
+			for (auto& tab : tabs_)
+			{
+				tab->cancel();
+			}
+
+			// タブの選択状況を0に戻す
+			tab_control_select(0);
+
 			::ShowWindow(window_, SW_HIDE);
 			return 0;
 
