@@ -199,7 +199,7 @@ namespace app {
 
 	uint32_t config_ini::get_duplicate_threshold()
 	{
-		return get_msec(L"DUPLICATE_THRESHOLD", 10);
+		return get_msec(L"DUPLICATE_THRESHOLD", 20);
 	}
 
 	uint32_t config_ini::get_threshold_interval()
