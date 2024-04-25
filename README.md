@@ -6,6 +6,9 @@
 
 OBSのアプリケーション音声キャプチャでノイズが入る為、回避策として作ったアプリケーション。
 
+![image](https://github.com/ndekopon/app-audio-loopback/assets/92087784/c8d8788e-a620-4274-98cc-9a9769201a6d)
+
+
 ## 使い方
 
 ### ダウンロード
